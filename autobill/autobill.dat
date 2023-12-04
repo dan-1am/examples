@@ -1,0 +1,1495 @@
+#version 1.06
+
+
+dofile autobill.lib
+
+
+
+sub surn_trans_docs
+  set_dogovor dg_surn_trans
+  make_balance
+  debtprice=${total}
+  poplist alldocs
+  wareslist=trans
+  make_act
+  wareslist=${debt_in_bills}trans
+  make_bill
+endsub
+
+sub surn_serv_docs
+  set_dogovor dg_surn_serv
+  make_balance
+  debtprice=${total}
+  poplist alldocs
+  evaluate ${watercount2}-${watercount1}
+  water=${ret}
+  drain=${water}
+  wareslist=trans,water,drain
+  make_act
+  wareslist=${debt_in_bills}trans,water,drain
+  make_bill
+endsub
+
+# Run at the beginning of surn_enr_docs() to skip last act in balance
+sub surn_agent_docs
+  set_dogovor dg_surn_agent
+  billnum=${billnum_ag}
+  make_balance
+  debtprice=${total}
+  poplist alldocs
+  wareslist=${debt_in_bills}agent
+  make_bill
+endsub
+
+sub surn_enr_act
+  set_dogovor dg_surn_enr
+  wareslist=enr
+  count_sums agent
+  make_act_enr
+  pushinfo dg_surn_agent_acts,${date},${agentsum},${docname}
+endsub
+
+sub surn_enr_docs
+  surn_agent_docs
+  surn_enr_act
+  set_dogovor dg_surn_enr
+  billnum=${billnum_enr}
+  make_balance
+  debtprice=${total}
+  poplist alldocs
+  enrpo=${enrnext}
+  enrpoprice=${enrprice}
+  wareslist=debt,enrpo
+  tmp=${dateact}
+#  dateact=${datebill}
+  nextmonth ${dateact}
+  dateact=${ret}
+  make_bill
+  dateact=${tmp}
+endsub
+
+sub teplo_counters
+  evaluate $v{'gas'}=$v{'gascount2'}-%v{'gascount1'}
+  evaluate $v{'teplo'}=sprintf "%.3f",round($v{'gas'}*$v{'gasburn'}*1000)/1000
+endsub
+
+sub make_calc_teplo
+  doctype=Расчет
+  form=${form_calc_teplo}
+  set_month ${dateact}
+  docnum=${actnum}
+  makedoc
+  poplist alldocs
+endsub
+
+sub make_bill_teplo
+  prepare_bill
+  clearlist make_table_wares
+  addwares make_table_wares,debt,teplo
+  nextmonth ${dateact} #!!! change to settable var
+  dateact31 ${ret}
+  set_month ${dateact}
+  set_date ${datebill}
+  addwares make_table_wares,teplopo
+  printwares make_table_wares
+  makedoc
+endsub
+
+sub surn_teplo_docs
+  set_dogovor dg_surn_teplo
+  make_balance
+  debtprice=${total}
+  poplist alldocs
+  teplo_counters
+  total=0
+  make_calc_teplo
+  wareslist=teplo
+  make_act
+  make_bill_teplo
+endsub
+
+
+
+side1=surn
+${side1}_short=ИП Сурнин Егор Валерьевич
+${side1}_full=Индивидуальный предприниматель Сурнин Егор Валерьевич
+${side1}_ids=ОГРНИП&nbsp;312547611500261, ИНН&nbsp;540528102063
+${side1}_addr=630017, г.&nbsp;Новосибирск, ул.&nbsp;Бориса Богаткова, д.&nbsp;194/8, кв.&nbsp;137
+${side1}_person=Сурнин Егор Валерьевич
+${side1}_persondot=Сурнин Е.В.
+${side1}_person2=Сурнина Егора Валерьевича
+${side1}_account=408 028 101 616 400 001 17
+${side1}_bank=Филиал Новосибирский №2 ПАО Банк &laquo;ФК Открытие&raquo;
+${side1}_bik=045 004 741
+${side1}_bankacc=301 018 103 500 400 007 41
+${side1}_stamp=М.П.
+
+set_dogovor dg_surn_enr
+${dogovor_id}_dogovor=агентский договор б/н от 01.06.2013&nbsp;г.
+${dogovor_id}_part= (электроэнергия)
+dogovor_side 1,ptpo,Агент,ptpo
+dogovor_side 2,surn,Принципал,surn
+${dogovor_id}_nameextra=ээ_сурнин
+${dogovor_id}_object=г.&nbsp;Каргат, ул.&nbsp;Советская, 203
+
+set_dogovor dg_surn_agent
+${dogovor_id}_dogovor=агентский договор б/н от 01.06.2013&nbsp;г.
+${dogovor_id}_part= (вознаграждение агента)
+dogovor_side 1,ptpo,Агент,ptpo
+dogovor_side 2,surn,Принципал,surn
+${dogovor_id}_nameextra=агент_сурнин
+
+set_dogovor dg_surn_trans
+${dogovor_id}_dogovor=оказания услуг по транспортировке электроэнергии б/н от 01.06.2013&nbsp;г.
+${dogovor_id}_part= (транспортировка электроэнергии)
+dogovor_side 1,ptpo,Исполнитель,ptpo
+dogovor_side 2,surn,Заказчик,surn
+${dogovor_id}_nameextra=транс_сурнин
+
+set_dogovor dg_surn_teplo
+${dogovor_id}_dogovor=на отпуск и потребление тепловой энергии б/н от 01.12.2015&nbsp;г.
+${dogovor_id}_part= (теплоэнергия)
+dogovor_side 1,ptpo,Поставщик,ptpo
+dogovor_side 2,surn,Потребитель,surn
+${dogovor_id}_nameextra=тепло_сурнин
+
+set_dogovor dg_surn_serv
+${dogovor_id}_dogovor=оказания услуг по транспортировке электроэнергии б/н от 01.06.2013&nbsp;г., оказания услуг холодного водоснабжения и водоотведения б/н от 01.08.2022&nbsp;г.
+${dogovor_id}_part= (услуги)
+dogovor_side 1,ptpo,Исполнитель,ptpo
+dogovor_side 2,surn,Заказчик,surn
+${dogovor_id}_nameextra=услуг_сурнин
+
+sub payenr
+#  splitarg date,total,docname,filename
+  pushinfo dg_surn_enr_balance,${arg}
+endsub
+
+sub payagt
+  pushinfo dg_surn_agent_balance,${arg}
+endsub
+
+sub paytrn
+  pushinfo dg_surn_trans_balance,${arg}
+endsub
+
+sub paytpl
+  pushinfo dg_surn_teplo_balance,${arg}
+endsub
+
+sub paysrv
+  pushinfo dg_surn_serv_balance,${arg}
+endsub
+
+
+form_calc_teplo=form_surn_teplocalc.htm
+
+#С 221115 убираю задолженность из счетов, кроме ээ и тепла, по просьбе ЖНВ
+debt_in_bills=debt,
+
+teplopotext=Тепловая энергия, предоплата
+teplopounit=шт.
+
+debt=1
+enrndspercent=20
+enrpondspercent=${enrndspercent}
+enrnext=2000.00
+agent=1
+agentratio=0.1
+transprice=1.17 #до 2020.02.01
+gasburn=0.0079 #Гкал/куб.м.
+teploprice=1975.57 #до 2020.08.31
+teplopo=1
+teplopoprice=30000.00
+
+
+
+set_dogovor dg_surn_enr
+clearlist ${dogovor_id}_balance
+pushinfo ${dogovor_id}_balance,2019.12.31,-4190.26,Сальдо,head
+${dogovor_id}_balancedate=2020.01.01
+
+set_dogovor dg_surn_agent
+clearlist ${dogovor_id}_balance
+pushinfo ${dogovor_id}_balance,2019.12.31,460.53,Сальдо,head
+${dogovor_id}_balancedate=2020.01.01
+
+set_dogovor dg_surn_trans
+clearlist ${dogovor_id}_balance
+pushinfo ${dogovor_id}_balance,2019.12.31,1218.75,Сальдо,head
+${dogovor_id}_balancedate=2020.01.01
+
+set_dogovor dg_surn_teplo
+clearlist ${dogovor_id}_balance
+pushinfo ${dogovor_id}_balance,2019.12.31,41324.00,Сальдо,head
+${dogovor_id}_balancedate=2020.01.01
+
+
+
+payenr 2020.01.23,-4651.84,пп 95,(77655.12=71324.00+1218.75+4651.84+460.53)
+payagt 2020.01.23,-460.53,пп 95,(77655.12=71324.00+1218.75+4651.84+460.53)
+paytrn 2020.01.23,-1218.75,пп 95,(77655.12=71324.00+1218.75+4651.84+460.53)
+paytpl 2020.01.23,-71324.00,пп 95,(77655.12=71324.00+1218.75+4651.84+460.53)
+
+pushfile dg_surn_teplo_acts,200131_Акт01-зт_тепло_зверков_янв_77021.55.rtf
+pushfile dg_surn_teplo_acts,200229_Акт02-зт_жнв_тепло_зверков_февр_81391.51.rtf
+pushfile dg_surn_teplo_acts,200331_Акт03-зт_тепло_зверков_мар_58885.81.rtf
+pushfile dg_surn_teplo_acts,200430_Акт04-зт_тепло_зверков_апр_34414.43.rtf
+
+datebill=2020.03.10
+dateact31 2020.01
+enreq=(417786-416594-(2912-2830))*1*1.03502
+enrprice=3.73012
+fill_counters
+actnum=01-зп
+billnum=06-з
+#surn_trans_docs
+actnum=01-з
+billnum_enr=07-з
+billnum_ag=08-з
+#surn_enr_docs
+# Это правильные акты, но их не было.
+# Отправили неправильные акты(жнв) + корректировка
+
+# Неправильный акт+корректировка
+set_dogovor dg_surn_enr
+pushinfo ${dogovor_id}_acts,2020.01.31,4968.52,Акт 01-з
+pushinfo ${dogovor_id}_acts,2020.02.29,173.98,Акт 02-з
+set_dogovor dg_surn_agent
+pushinfo ${dogovor_id}_acts,2020.01.31,496.85,Акт 01-з
+pushinfo ${dogovor_id}_acts,2020.02.29,17.40,Акт 02-з
+set_dogovor dg_surn_trans
+pushinfo ${dogovor_id}_acts,2020.01.31,1343.42,Акт 01-зп
+
+#### с 2020.02.01 по 2020.12.31
+transprice=1.23
+
+datebill=2020.03.20
+dateact31 2020.02
+enreq=(419036-417786-(3001-2912))*1*1.03412
+enrprice=3.82738
+fill_counters
+actnum=02-зп
+billnum=09-з
+surn_trans_docs
+actnum=03-з
+billnum_enr=10-з
+billnum_ag=11-з
+surn_enr_docs
+
+paytpl 2020.03.05,-81391.51,пп 226,по сч06-з
+
+payenr 2020.03.12,-4761.97,пп 279,(6602.24=1343.42+4761.97+496.85)
+payagt 2020.03.12,-496.85,пп 279,(6602.24=1343.42+4761.97+496.85)
+paytrn 2020.03.12,-1343.42,пп 279,(6602.24=1343.42+4761.97+496.85)
+
+payenr 2020.03.25,-6238.37,пп 308,(8283.94=1476.75+6238.37+568.82)
+payagt 2020.03.25,-568.82,пп 308,(8283.94=1476.75+6238.37+568.82)
+paytrn 2020.03.25,-1476.75,пп 308,(8283.94=1476.75+6238.37+568.82)
+
+paytpl 2020.04.08,-135907.37,пп 322,(135907.37=77021.55+58885.81) сч05-з,сч12-з
+
+# Счета не выставляли, выставили в след месяце за 2м
+#datebill=2020.05.14
+datebill=2000.01.01
+dateact31 2020.03
+enreq=(420035-419036-(3084-3001))*1*1.05442
+enrprice=3.69489
+fill_counters
+actnum=03-зп
+billnum=00-з
+surn_trans_docs
+actnum=04-з
+billnum_enr=00-з
+billnum_ag=00-з
+surn_enr_docs
+
+datebill=2020.05.14
+dateact31 2020.04
+enreq=(420529-420035-(3136-3084))*1*1.062
+enrprice=3.57358
+fill_counters
+actnum=04-зп
+billnum=14-з
+surn_trans_docs
+actnum=05-з
+billnum_enr=15-з
+billnum_ag=16-з
+surn_enr_docs
+
+payenr 2020.05.18,-5686.26,пп 467,(12495.58=4414.42+1765.36+5686.26+629.54)
+payagt 2020.05.18,-629.54,пп 467,(12495.58=4414.42+1765.36+5686.26+629.54)
+paytrn 2020.05.18,-1765.36,пп 467,(12495.58=4414.42+1765.36+5686.26+629.54)
+paytpl 2020.05.18,-4414.42,пп 467,(12495.58=4414.42+1765.36+5686.26+629.54) сч13-16 #тепло+тр+ээ+аг
+
+datebill=2020.07.03
+dateact31 2020.05
+enreq=(421188-420529-(3159-3136))*1*1.0595
+enrprice=3.60466
+fill_counters
+actnum=05-зп
+billnum=17-з
+surn_trans_docs
+actnum=06-з
+billnum_enr=18-з
+billnum_ag=19-з
+surn_enr_docs
+
+# Счета не выставляли, выставили в след месяце за 2м
+#datebill=2020.08.24
+datebill=2000.01.01
+dateact31 2020.06
+enreq=(421869-421188-(3179-3159))*1*1.0612
+enrprice=3.66581
+fill_counters
+actnum=06-зп
+billnum=00-з
+surn_trans_docs
+actnum=07-з
+billnum_enr=00-з
+billnum_ag=00-з
+surn_enr_docs
+
+payenr 2020.07.09,-2989.34,пп 635,(4109.64=828.82+2989.34+291.48)
+payagt 2020.07.09,-291.48,пп 635,(4109.64=828.82+2989.34+291.48)
+paytrn 2020.07.09,-828.82,пп 635,(4109.64=828.82+2989.34+291.48)
+
+datebill=2020.08.24
+dateact31 2020.07
+enreq=(422356-421869-(3206-3179))*1*1.06413
+enrprice=4.01800
+fill_counters
+actnum=07-зп
+billnum=20-з
+surn_trans_docs
+actnum=08-з
+billnum_enr=21-з
+billnum_ag=22-з
+surn_enr_docs
+
+payenr 2020.08.27,-6437.85,пп 783,(8447.31=1464.87+6437.85+544.59) сч20-22
+payagt 2020.08.27,-544.59,пп 783,(8447.31=1464.87+6437.85+544.59) сч20-22
+paytrn 2020.08.27,-1464.87,пп 783,(8447.31=1464.87+6437.85+544.59) сч20-22
+
+teploprice=2072.07	#до 210630
+
+datebill=2020.10.08
+dateact31 2020.08
+enreq=(422959-422356-(3232-3206))*1*1.06019
+enrprice=3.98055
+fill_counters
+actnum=08-зп
+billnum=23-з
+surn_trans_docs
+actnum=09-з
+billnum_enr=24-з
+billnum_ag=25-з
+surn_enr_docs
+
+payenr 2020.10.20,-2832.14,пп 944,(3876.77=752.43+2832.14+292.20) сч23-25
+payagt 2020.10.20,-292.20,пп 944,(3876.77=752.43+2832.14+292.20) сч23-25
+paytrn 2020.10.20,-752.43,пп 944,(3876.77=752.43+2832.14+292.20) сч23-25
+
+datebill=2020.10.28
+dateact31 2020.09
+enreq=(424034-422959-(3260-3232))*1*1.05961
+enrprice=4.05569
+fill_counters
+actnum=09-зп
+billnum=26-з
+surn_trans_docs
+actnum=10-з
+billnum_enr=27-з
+billnum_ag=28-з
+surn_enr_docs
+
+datebill=2020.11.02
+dateact31 2020.10
+gascount1=320108
+gascount2=322608
+actnum=05-зт
+billnum=29-з
+surn_teplo_docs
+
+paytrn 2020.11.09,-1364.57,пп 1034,(78407.52=1364.57+5579.64+539.93+70923.38) сч26-29
+payenr 2020.11.09,-5579.64,пп 1034,(78407.52=1364.57+5579.64+539.93+70923.38) сч26-29
+payagt 2020.11.09,-539.93,пп 1034,(78407.52=1364.57+5579.64+539.93+70923.38) сч26-29
+paytpl 2020.11.09,-70923.38,пп 1034,(78407.52=1364.57+5579.64+539.93+70923.38) сч26-29
+
+datebill=2020.11.20
+dateact31 2020.10
+enreq=(424932-424034-(3284-3260))*1*1.05741
+enrprice=4.00019
+fill_counters
+actnum=10-зп
+billnum=30-з
+surn_trans_docs
+actnum=11-з
+billnum_enr=31-з
+billnum_ag=32-з
+surn_enr_docs
+
+
+
+paytrn 2020.11.26,-1136.74,пп 1071,(5883.45=1136.74+4303.08+443.63) сч30-32
+payenr 2020.11.26,-4303.08,пп 1071,(5883.45=1136.74+4303.08+443.63) сч30-32
+payagt 2020.11.26,-443.63,пп 1071,(5883.45=1136.74+4303.08+443.63) сч30-32
+
+datebill=2020.12.02
+dateact31 2020.11
+gascount1=322608
+gascount2=325705
+actnum=06-зт
+billnum=33-з
+surn_teplo_docs
+
+paytpl 2020.12.10,-50695.26,пп 1135,201202_Счет33-з_тепло_сурнин_50695.26.htm
+
+datebill=2020.12.18
+dateact31 2020.11
+enreq=(425800-424932-(3310-3284))*1*1.05425
+enrprice=4.03355
+fill_counters
+actnum=11-зп
+billnum=34-з
+surn_trans_docs
+actnum=12-з
+billnum_enr=35-з
+billnum_ag=36-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2020.12.25,-1091.85,пп 1193,(5898.17=1091.85+4376.66+429.66) сч34-36
+payenr 2020.12.25,-4376.66,пп 1193,(5898.17=1091.85+4376.66+429.66) сч34-36
+payagt 2020.12.25,-429.66,пп 1193,(5898.17=1091.85+4376.66+429.66) сч34-36
+
+datebill=2021.01.06
+dateact31 2020.12
+gascount1=325705
+gascount2=330430
+actnum=07-зт
+billnum=01-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2021.01.14,-77346.23,пп 46,210106_Счет01-з_тепло_сурнин_77346.23.htm
+
+datebill=2021.01.18
+dateact31 2020.12
+enreq=(427115-425800-(3446-3310))*1*1.04769
+enrprice=3.98570
+fill_counters
+actnum=12-зп
+billnum=02-з
+surn_trans_docs
+actnum=13-з
+billnum_enr=03-з
+billnum_ag=04-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.01.21,-1519.33,пп 63,(7903.19=1519.33+5793.07+590.79) 210118_Счет02-з_транс_сурнин_1519.33.htm
+payenr 2021.01.21,-5793.07,пп 63,(7903.19=1519.33+5793.07+590.79) 210118_Счет03-з_ээ_сурнин_5793.07.htm
+payagt 2021.01.21,-590.79,пп 63,(7903.19=1519.33+5793.07+590.79) 210118_Счет04-з_агент_сурнин_590.79.htm
+
+datebill=2021.02.03
+dateact31 2021.01
+gascount1=330430
+gascount2=337320
+actnum=01-зт
+billnum=05-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2021.02.12,-112784.84,пп 143,210203_Счет05-з_тепло_сурнин_112784.84.htm
+
+#### с 2021.01.01
+transprice=1.29
+
+datebill=2021.03.01
+dateact31 2021.01
+enreq=(428356-427115-(3534-3446))*1*1.04355
+enrprice=3.92600
+fill_counters
+actnum=01-зп
+billnum=06-з
+surn_trans_docs
+actnum=01-з
+billnum_enr=07-з
+billnum_ag=08-з
+surn_enr_docs
+#make_reestr 1,4
+
+datebill=2021.03.02
+dateact31 2021.02
+gascount1=337320
+gascount2=343209
+actnum=02-зт
+billnum=09-з
+surn_teplo_docs
+#make_reestr 1
+
+paytrn 2021.03.09,-1552.14,пп 211,(104043.19=1552.14+5525.28+566.86+96398.91) 210301_Счет06-з_транс_сурнин_1552.14.htm
+payenr 2021.03.09,-5525.28,пп 211,(104043.19=1552.14+5525.28+566.86+96398.91) 210301_Счет07-з_ээ_сурнин_5525.28.htm
+payagt 2021.03.09,-566.86,пп 211,(104043.19=1552.14+5525.28+566.86+96398.91) 210301_Счет08-з_агент_сурнин_566.86.htm
+paytpl 2021.03.09,-96398.91,пп 211,(104043.19=1552.14+5525.28+566.86+96398.91) 210302_Счет09-з_тепло_сурнин_96398.91.htm
+
+datebill=2021.03.31
+dateact31 2021.02
+enreq=(429584-428356-(3617-3534))*1*1.04199
+enrprice=4.09709
+fill_counters
+actnum=02-зп
+billnum=10-з
+surn_trans_docs
+actnum=02-з
+billnum_enr=11-з
+billnum_ag=12-з
+surn_enr_docs
+#make_reestr 1,4
+
+datebill=2021.03.31
+dateact31 2021.03
+gascount1=343209
+gascount2=347960
+actnum=03-зт
+billnum=13-з
+surn_teplo_docs
+#make_reestr 1
+
+paytrn 2021.04.08,-1539.07,пп 292,(86173.06=1539.07+6276.41+586.58+77771.00) 210331_Счет10-з_транс_сурнин_1539.07.htm
+payenr 2021.04.08,-6276.41,пп 292,(86173.06=1539.07+6276.41+586.58+77771.00) 210331_Счет11-з_ээ_сурнин_6276.41.htm
+payagt 2021.04.08,-586.58,пп 292,(86173.06=1539.07+6276.41+586.58+77771.00) 210331_Счет12-з_агент_сурнин_586.58.htm
+paytpl 2021.04.08,-77771.00,пп 292,(86173.06=1539.07+6276.41+586.58+77771.00) 210331_Счет13-з_тепло_сурнин_77771.00.htm
+
+datebill=2021.04.22
+dateact31 2021.03
+enreq=(430614-429584-(3700-3617))*1*1.05355
+enrprice=4.02004
+fill_counters
+actnum=03-зп
+billnum=14-з
+surn_trans_docs
+actnum=03-з
+billnum_enr=15-з
+billnum_ag=16-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.04.29,-1287.05,пп 350,(6396.43=1287.05+4628.08+481.30) 210422_Счет14-з_транс_сурнин_1287.05.htm
+payenr 2021.04.29,-4628.08,пп 350,(6396.43=1287.05+4628.08+481.30) 210422_Счет15-з_ээ_сурнин_4628.08.htm
+payagt 2021.04.29,-481.30,пп 350,(6396.43=1287.05+4628.08+481.30) 210422_Счет16-з_агент_сурнин_481.30.htm
+
+datebill=2021.05.10
+dateact31 2021.04
+gascount1=347960
+gascount2=351451
+actnum=04-зт
+billnum=17-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2021.05.17,-57145.62,пп 409,210510_Счет17-з_тепло_сурнин_57145.62.htm
+
+datebill=2021.05.19
+dateact31 2021.04
+enreq=(431538-430614-(3773-3700))*1*1.05172
+enrprice=3.99164
+fill_counters
+actnum=04-зп
+billnum=18-з
+surn_trans_docs
+actnum=04-з
+billnum_enr=19-з
+billnum_ag=20-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.05.27,-1154.56,пп 425,(5802.18=1154.56+4218.91+428.71) 210519_Счет18-з_транс_сурнин_1154.56.htm
+payenr 2021.05.27,-4218.91,пп 425,(5802.18=1154.56+4218.91+428.71) 210519_Счет19-з_ээ_сурнин_4218.91.htm
+payagt 2021.05.27,-428.71,пп 425,(5802.18=1154.56+4218.91+428.71) 210519_Счет20-з_агент_сурнин_428.71.htm
+
+datebill=2021.06.07
+dateact31 2021.05
+gascount1=351451
+gascount2=352068
+actnum=05-зт
+billnum=21-з
+surn_teplo_docs
+make_reestr 1
+
+datebill=2021.06.24
+dateact31 2021.05
+enreq=(432283-431538-(3801-3773))*1*1.06633
+enrprice=3.92860
+fill_counters
+actnum=05-зп
+billnum=22-з
+surn_trans_docs
+actnum=05-з
+billnum_enr=23-з
+billnum_ag=24-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.06.29,-986.28,пп 525,(4799.80=986.28+3453.08+360.44) 210624_Счет22-з_транс_сурнин_986.28.htm
+payenr 2021.06.29,-3453.08,пп 525,(4799.80=986.28+3453.08+360.44) 210624_Счет23-з_ээ_сурнин_3453.08.htm
+payagt 2021.06.29,-360.44,пп 525,(4799.80=986.28+3453.08+360.44) 210624_Счет24-з_агент_сурнин_360.44.htm
+
+datebill=2021.07.26
+dateact31 2021.06
+enreq=(433035-432283-(3834-3801))*1*1.05972
+enrprice=4.02716
+fill_counters
+actnum=06-зп
+billnum=25-з
+surn_trans_docs
+actnum=06-з
+billnum_enr=26-з
+billnum_ag=27-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.08.04,-982.90,пп 611,(5269.79=982.90+3918.68+368.21) 210726_Счет25-з_транс_сурнин_982.90.htm
+payenr 2021.08.04,-3918.68,пп 611,(5269.79=982.90+3918.68+368.21) 210726_Счет26-з_ээ_сурнин_3918.68.htm
+payagt 2021.08.04,-368.21,пп 611,(5269.79=982.90+3918.68+368.21) 210726_Счет27-з_агент_сурнин_368.21.htm
+
+datebill=2021.08.20
+dateact31 2021.07
+enreq=(433593-433035-(3858-3834))*1*1.05947
+enrprice=4.13600
+fill_counters
+actnum=07-зп
+billnum=28-з
+surn_trans_docs
+actnum=07-з
+billnum_enr=29-з
+billnum_ag=30-з
+surn_enr_docs
+set_dogovor dg_surn_teplo
+billnum=
+total=
+text=<p>Уведомляем Вас об изменении стоимости услуг по договору ${${dogovor_id}_dogovor}.
+text=${text} С 01 сентября 2021 г. стоимость услуг составляет:</p>
+text=${text}<p>Тепловая энергия: 2167 рублей 06 копеек за 1 Гкал.</p>
+make_letter
+make_reestr 1,4
+
+teploprice=2167.06 #до 2022.06.30
+
+paytrn 2021.09.06,-729.83,пп 684,(4079.83=729.83+3069.20+280.80) 210820_Счет28-з_транс_сурнин_729.83.htm
+payenr 2021.09.06,-3069.20,пп 684,(4079.83=729.83+3069.20+280.80) 210820_Счет29-з_ээ_сурнин_3069.20.htm
+payagt 2021.09.06,-280.80,пп 684,(4079.83=729.83+3069.20+280.80) 210820_Счет30-з_агент_сурнин_280.80.htm
+
+datebill=2021.09.14
+dateact31 2021.08
+enreq=(434079-433593-(3888-3858))*1*1.06739
+enrprice=4.13305
+fill_counters
+actnum=08-зп
+billnum=31-з
+surn_trans_docs
+actnum=08-з
+billnum_enr=32-з
+billnum_ag=33-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.09.17,-627.88,пп 727,(627.88+2406.94+241.40=3276.22) 210914_Счет31-з_транс_сурнин_627.88.htm
+payenr 2021.09.17,-2406.94,пп 727,(627.88+2406.94+241.40=3276.22) 210914_Счет32-з_ээ_сурнин_2406.94.htm
+payagt 2021.09.17,-241.40,пп 727,(627.88+2406.94+241.40=3276.22) 210914_Счет33-з_агент_сурнин_241.40.htm
+
+datebill=2021.10.01
+dateact31 2021.09
+gascount1=352068
+gascount2=352605
+actnum=06-зт
+billnum=34-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2021.10.11,-19291.94,пп 782,211001_Счет34-з_тепло_сурнин_19291.94.htm
+
+datebill=2021.10.15
+dateact31 2021.09
+enreq=(434729-434079-(3923-3888))*1*1.06154
+enrprice=4.25485
+fill_counters
+actnum=09-зп
+billnum=35-з
+surn_trans_docs
+actnum=09-з
+billnum_enr=36-з
+billnum_ag=37-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.10.26,-842.18,пп 823,(842.18+3625.66+333.33=4801.17) 211015_Счет35-з_транс_сурнин_842.18.htm
+payenr 2021.10.26,-3625.66,пп 823,(842.18+3625.66+333.33=4801.17) 211015_Счет36-з_ээ_сурнин_3625.66.htm
+payagt 2021.10.26,-333.33,пп 823,(842.18+3625.66+333.33=4801.17) 211015_Счет37-з_агент_сурнин_333.33.htm
+
+datebill=2021.11.02
+dateact31 2021.10
+gascount1=352605
+gascount2=355423
+actnum=07-зт
+billnum=38-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2021.11.09,-48243.09,пп 846,211102_Счет38-з_тепло_сурнин_48243.09.htm
+
+datebill=2021.11.15
+dateact31 2021.10
+enreq=(435239-434729-(3962-3923))*1*1.06164
+enrprice=4.25422
+fill_counters
+actnum=10-зп
+billnum=39-з
+surn_trans_docs
+actnum=10-з
+billnum_enr=40-з
+billnum_ag=41-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.11.19,-645.04,пп 860,(645.04+2551.18+255.27=3451.49) 211115_Счет39-з_транс_сурнин_645.04.htm
+payenr 2021.11.19,-2551.18,пп 860,(645.04+2551.18+255.27=3451.49) 211115_Счет40-з_ээ_сурнин_2551.18.htm
+payagt 2021.11.19,-255.27,пп 860,(645.04+2551.18+255.27=3451.49) 211115_Счет41-з_агент_сурнин_255.27.htm
+
+datebill=2021.12.01
+dateact31 2021.11
+gascount1=355423
+gascount2=359498
+actnum=08-зт
+billnum=42-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2021.12.06,-69764.16,пп 906,211201_Счет42-з_тепло_сурнин_69764.16.htm
+
+datebill=2021.12.14
+dateact31 2021.11
+enreq=(435832-435239-(4029-3962))*1*1.05664
+enrprice=4.30839
+fill_counters
+actnum=11-зп
+billnum=43-з
+surn_trans_docs
+actnum=11-з
+billnum_enr=44-з
+billnum_ag=45-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2021.12.23,-716.97,пп 956, (716.97+3003.48=3720.45) 211214_Счет43-з_транс_сурнин_716.97.htm
+payenr 2021.12.23,-3003.48,пп 956, (716.97+3003.48=3720.45) 211214_Счет44-з_ээ_сурнин_3003.48.htm
+
+#payagt 2022.01.10,-287.35,Ожидаемая оплата по сч.45-з от 2021.12.14 !,211214_Счет45-з_агент_сурнин_287.35.htm
+
+datebill=2022.01.10
+dateact31 2021.12
+gascount1=359498
+gascount2=364050
+actnum=09-зт
+billnum=46-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2022.01.13,-77929.64,пп 15,220110_Счет46-з_тепло_сурнин_77929.64.htm
+
+datebill=2022.01.19
+dateact31 2021.12
+enreq=(436566-435832-(4116-4029))*1*1.04882
+enrprice=4.23525
+fill_counters
+actnum=12-зп
+billnum=01-з
+surn_trans_docs
+actnum=12-з
+billnum_enr=02-з
+billnum_ag=03-з
+surn_enr_docs
+
+date1=2020.01.01
+date2=2021.12.31
+set_dogovor dg_surn_enr
+docnum=01-з
+make_sverka
+set_dogovor dg_surn_agent
+docnum=02-з
+make_sverka
+set_dogovor dg_surn_trans
+docnum=03-з
+make_sverka
+set_dogovor dg_surn_teplo
+docnum=04-з
+make_sverka
+set_dogovor dg_surn_enr
+
+make_reestr 1,4,6-9
+
+set_dogovor dg_surn_enr
+${dogovor_id}_balancedate=2022.01.01
+set_dogovor dg_surn_agent
+${dogovor_id}_balancedate=2022.01.01
+set_dogovor dg_surn_trans
+${dogovor_id}_balancedate=2022.01.01
+set_dogovor dg_surn_teplo
+${dogovor_id}_balancedate=2022.01.01
+
+payagt 2022.01.20,-287.35,пп 43,211214_Счет45-з_агент_сурнин_287.35.htm
+
+#paytrn 2022.02.03,-875.3,Ожидаемая оплата по сч.01-з от 2022.01.19 !,220119_Счет01-з_транс_сурнин_875.38.htm
+#payenr 2022.02.03,-3273.26.,Ожидаемая оплата по сч.02-з от 2022.01.19 !,220119_Счет02-з_ээ_сурнин_3273.26.htm
+#payagt 2022.02.03,-344.8,Ожидаемая оплата по сч.03-з от 2022.01.19 !,220119_Счет03-з_агент_сурнин_344.88.htm
+
+datebill=2022.02.03
+dateact31 2022.01
+gascount1=364050
+gascount2=369731
+actnum=01-зт
+billnum=04-з
+surn_teplo_docs
+make_reestr 1
+
+paytrn 2022.02.14,-875.38,пп 92,(875.38+3273.26+344.88+38257.65=42751.17) 220119_Счет01-з_транс_сурнин_875.38.htm
+payenr 2022.02.14,-3273.26,пп 92,(875.38+3273.26+344.88+38257.65=42751.17) 220119_Счет02-з_ээ_сурнин_3273.26.htm
+payagt 2022.02.14,-344.88,пп 92,(875.38+3273.26+344.88+38257.65=42751.17) 220119_Счет03-з_агент_сурнин_344.88.htm
+paytpl 2022.02.14,-38257.65,пп 92,(875.38+3273.26+344.88+38257.65=42751.17) 220203_Счет04-з_тепло_сурнин_97257.65.htm
+
+#paytpl 2022.02.14,-59000.00,Ожидаемая оплата по сч.04-з от 2022.02.03 !,220203_Счет04-з_тепло_сурнин_97257.65.htm
+
+datebill=2022.02.16
+dateact31 2022.01
+enreq=(437250-436566-(4205-4116))*1*1.0533
+enrprice=4.26088
+fill_counters
+actnum=01-зп
+billnum=05-з
+surn_trans_docs
+actnum=01-з
+billnum_enr=06-з
+billnum_ag=07-з
+surn_enr_docs
+make_reestr 1,4
+
+paytpl 2022.02.17,-59000.00,пп 95,220203_Счет04-з_тепло_сурнин_97257.65.htm
+
+paytrn 2022.02.21,-808.46,пп 121,(808.46+3265.92+320.44=4394.82) 220216_Счет05-з_транс_сурнин_808.46.htm
+payenr 2022.02.21,-3265.92,пп 121,(808.46+3265.92+320.44=4394.82) 220216_Счет06-з_ээ_сурнин_3265.92.htm
+payagt 2022.02.21,-320.44,пп 121,(808.46+3265.92+320.44=4394.82) 220216_Счет07-з_агент_сурнин_320.44.htm
+
+datebill=2022.03.02
+dateact31 2022.02
+gascount1=369731
+gascount2=375171
+actnum=02-зт
+billnum=08-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2022.03.11,-93131.57,пп 166,220302_Счет08-з_тепло_сурнин_93131.57.htm
+
+datebill=2022.03.21
+dateact31 2022.02
+enreq=(438114-437250-(4301-4205))*1*1.04761
+enrprice=4.56600
+fill_counters
+actnum=02-зп
+billnum=09-з
+surn_trans_docs
+actnum=02-з
+billnum_enr=10-з
+billnum_ag=11-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2022.03.24,-1037.88,пп 199,(1037.88+5140.63+440.83=6619.34) 220321_Счет09-з_транс_сурнин_1037.88.htm
+payenr 2022.03.24,-5140.63,пп 199,(1037.88+5140.63+440.83=6619.34) 220321_Счет10-з_ээ_сурнин_5140.63.htm
+payagt 2022.03.24,-440.83,пп 199,(1037.88+5140.63+440.83=6619.34) 220321_Счет11-з_агент_сурнин_440.83.htm
+
+datebill=2022.03.31
+dateact31 2022.03
+gascount1=375171
+gascount2=379781
+actnum=03-зт
+billnum=12-з
+surn_teplo_docs
+make_reestr 1
+
+datebill=2022.04.20
+dateact31 2022.03
+enreq=(438880-438114-(4388-4301))*1*1.05959
+enrprice=4.42076
+fill_counters
+actnum=03-зп
+billnum=13-з
+surn_trans_docs
+actnum=03-з
+billnum_enr=14-з
+billnum_ag=15-з
+surn_enr_docs
+make_reestr 1,4
+
+paytpl 2022.04.21,-78922.16,пп 275,(78922.16=78922.16) 220331_Счет12-з_тепло_сурнин_78922.16.htm
+
+paytrn 2022.04.25,-928.10,пп 271,(928.10+3468.09+381.67=4777.86) 220420_Счет13-з_транс_сурнин_928.10.htm
+payenr 2022.04.25,-3468.09,пп 271,(928.10+3468.09+381.67=4777.86) 220420_Счет14-з_ээ_сурнин_3468.09.htm
+payagt 2022.04.25,-381.67,пп 271,(928.10+3468.09+381.67=4777.86) 220420_Счет15-з_агент_сурнин_381.67.htm
+
+datebill=2022.05.03
+dateact31 2022.04
+gascount1=379781
+gascount2=383192
+actnum=04-зт
+billnum=16-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2022.05.11,-58395.77,пп 303,220503_Счет16-з_тепло_сурнин_58395.77.htm
+
+datebill=2022.05.23
+dateact31 2022.04
+enreq=(439609-438880-(4467-4388))*1*1.05621
+enrprice=4.28894
+fill_counters
+actnum=04-зп
+billnum=17-з
+surn_trans_docs
+actnum=04-з
+billnum_enr=18-з
+billnum_ag=19-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2022.05.24,-885.64,пп 354,(885.64+3217.08+353.34=4456.06) 220523_Счет17-з_транс_сурнин_885.64.htm
+payenr 2022.05.24,-3217.08,пп 354,(885.64+3217.08+353.34=4456.06) 220523_Счет18-з_ээ_сурнин_3217.08.htm
+payagt 2022.05.24,-353.34,пп 354,(885.64+3217.08+353.34=4456.06) 220523_Счет19-з_агент_сурнин_353.34.htm
+
+datebill=2022.06.01
+dateact31 2022.05
+gascount1=383192
+gascount2=384141
+actnum=05-зт
+billnum=00-з
+surn_teplo_docs
+make_reestr 1
+
+datebill=2022.06.22
+dateact31 2022.05
+enreq=(440095-439609-(4501-4467))*1*1.066
+enrprice=4.14600
+fill_counters
+actnum=05-зп
+billnum=20-з
+surn_trans_docs
+actnum=05-з
+billnum_enr=21-з
+billnum_ag=22-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2022.07.13,-621.56,пп 472,(621.56+2054.14+239.72=2915.42) 220622_Счет20-з_транс_сурнин_621.56.htm
+payenr 2022.07.13,-2054.14,пп 472,(621.56+2054.14+239.72=2915.42) 220622_Счет21-з_ээ_сурнин_2054.14.htm
+payagt 2022.07.13,-239.72,пп 472,(621.56+2054.14+239.72=2915.42) 220622_Счет22-з_агент_сурнин_239.72.htm
+
+datebill=2022.07.25
+dateact31 2022.06
+enreq=(440743-440095-(4537-4501))*1*1.06068
+enrprice=4.19863
+fill_counters
+actnum=06-зп
+billnum=23-з
+surn_trans_docs
+actnum=06-з
+billnum_enr=24-з
+billnum_ag=25-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2022.08.03,-837.39,пп 522,(837.39+3396.91+327.06=4561.36) 220725_Счет23-з_транс_сурнин_837.39.htm
+payenr 2022.08.03,-3396.91,пп 522,(837.39+3396.91+327.06=4561.36) 220725_Счет24-з_ээ_сурнин_3396.91.htm
+payagt 2022.08.03,-327.06,пп 522,(837.39+3396.91+327.06=4561.36) 220725_Счет25-з_агент_сурнин_327.06.htm
+
+datebill=2022.08.17
+dateact31 2022.07
+enreq=(441244-440743-(4557-4537))*1*1.05958
+enrprice=4.54787
+fill_counters
+actnum=07-зп
+billnum=26-з
+surn_trans_docs
+actnum=07-з
+billnum_enr=27-з
+billnum_ag=28-з
+surn_enr_docs
+make_reestr 1,4
+
+datebill=2022.08.17
+date1=2022.01.01
+date2=2022.07.31
+set_dogovor dg_surn_teplo
+docnum=05-з
+make_sverka
+
+datebill=2022.08.17
+billnum=
+total=
+set_dogovor dg_surn_teplo
+text=<p>Уведомляем Вас об изменении стоимости услуг по договору ${${dogovor_id}_dogovor}.
+text=${text} С 01 сентября 2022 г. стоимость услуг составляет:</p>
+text=${text}<p>Тепловая энергия: 2279 рублей 72 копеек за 1 Гкал.</p>
+make_letter
+
+teploprice=2279.72 #до 2022.11.30
+
+paytrn 2022.08.18,-657.46,пп 560,(657.46+3619.62+278.14=4555.22) 220817_Счет26-з_транс_сурнин_657.46.htm
+payenr 2022.08.18,-3619.62,пп 560,(657.46+3619.62+278.14=4555.22) 220817_Счет27-з_ээ_сурнин_3619.62.htm
+payagt 2022.08.18,-278.14,пп 560,(657.46+3619.62+278.14=4555.22) 220817_Счет28-з_агент_сурнин_278.14.htm
+
+datebill=2022.09.14
+dateact31 2022.08
+enreq=(441838-441244-(4598-4557))*1*1.06186
+enrprice=4.56703
+fill_counters
+actnum=08-зп
+billnum=29-з
+surn_trans_docs
+actnum=08-з
+billnum_enr=30-з
+billnum_ag=31-з
+surn_enr_docs
+make_reestr 1,4
+
+paytrn 2022.09.29,-757.50,пп 662,(757.50+3264.15+321.82=4343.47) 220914_Счет29-з_транс_сурнин_757.50.htm
+payenr 2022.09.29,-3264.15,пп 662,(757.50+3264.15+321.82=4343.47) 220914_Счет30-з_ээ_сурнин_3264.15.htm
+payagt 2022.09.29,-321.82,пп 662,(757.50+3264.15+321.82=4343.47) 220914_Счет31-з_агент_сурнин_321.82.htm
+
+# Заключили договор с Сурниным на водоснабжение/отведение
+# Баланс и счета объединяю с транспортировкой, для экономии бумаги
+waterprice=20.80 #до 2022.12.31
+drainprice=22.58 #до 2022.12.31
+
+set_dogovor dg_surn_serv
+clearlist ${dogovor_id}_balance
+pushlist ${dogovor_id}_balance,dg_surn_trans_balance
+clearlist ${dogovor_id}_acts
+pushlist ${dogovor_id}_acts,dg_surn_trans_acts
+${dogovor_id}_balancedate=2022.01.01
+
+datebill=2022.10.20
+dateact31 2022.09
+enreq=(442770-441838-(4635-4598))*1*1.05382
+enrprice=4.666
+watercount1=1173  #220725=1173
+watercount2=1187  #220925=1187, первый счет, за 2 месяца, исправил руками в htm
+fill_counters
+actnum=09-зу
+billnum=32-з
+surn_serv_docs
+actnum=09-з
+billnum_enr=33-з
+billnum_ag=34-з
+surn_enr_docs
+make_reestr 1,4
+
+datebill=2022.11.01
+dateact31 2022.10
+gascount1=17
+gascount2=2587
+actnum=06-зт
+billnum=35-з
+surn_teplo_docs
+make_reestr 1
+
+paysrv 2022.11.10,-1824.01,пп 752,(1824.01+5518.53+528.10=7870.64) 221020_Счет32-з_услуг_сурнин_1824.01.htm
+payenr 2022.11.10,-5518.53,пп 752,(1824.01+5518.53+528.10=7870.64) 221020_Счет33-з_ээ_сурнин_5518.53.htm
+payagt 2022.11.10,-528.10,пп 752,(1824.01+5518.53+528.10=7870.64) 221020_Счет34-з_агент_сурнин_528.10.htm
+paytpl 2022.11.10,-62531.61,пп 756,221101_Счет35-з_тепло_сурнин_62531.61.htm
+
+#С 221115 убираю задолженность из счетов, кроме ээ и тепла, по просьбе ЖНВ
+debt_in_bills=
+
+datebill=2022.11.15
+dateact31 2022.10
+enreq=(443355-442770-(4683-4635))*1*1.04606
+enrprice=4.60881
+watercount1=1187
+watercount2=1194
+fill_counters
+actnum=10-зу
+billnum=36-з
+surn_serv_docs
+actnum=10-з
+billnum_enr=37-з
+billnum_ag=38-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2022.11.16,-1028.29,пп 787,221115_Счет36-з_услуг_сурнин_1028.29.htm
+payenr 2022.11.23,-2969.43,пп 804,(2969.43+310.67=3280.10) 221115_Счет37-з_ээ_сурнин_2969.43.htm
+payagt 2022.11.23,-310.67,пп 804,(2969.43+310.67=3280.10) 221115_Счет38-з_агент_сурнин_310.67.htm
+
+datebill=2022.12.01
+dateact31 2022.11
+gascount1=2587
+gascount2=6489
+actnum=07-зт
+billnum=39-з
+surn_teplo_docs
+make_reestr 1
+
+datebill=2022.12.14
+dateact31 2022.11
+enreq=(444105-443355-(4753-4683))*1*1.03407
+enrprice=4.688
+watercount1=1194
+watercount2=1201
+fill_counters
+actnum=11-зу
+billnum=40-з
+surn_serv_docs
+actnum=11-з
+billnum_enr=41-з
+billnum_ag=42-з
+surn_enr_docs
+
+datebill=2022.12.14
+billnum=
+total=0.00
+set_dogovor dg_surn_teplo
+text=<p>Уведомляем Вас об изменении стоимости услуг по договору ${${dogovor_id}_dogovor}.
+text=${text} С 01 декабря 2022 г. стоимость услуг составляет:</p>
+text=${text}<p>Тепловая энергия: 2502 рублей 61 копейка за 1 Гкал.</p>
+make_letter
+
+set_dogovor dg_surn_enr
+make_reestr 1,4
+
+teploprice=2502.61 #до 2023.06.30
+
+paytpl 2022.12.16,-70274.65,пп 860,(70274.65=70274.65) 221201_Счет39-з_тепло_сурнин_70274.65.htm
+
+paysrv 2022.12.20,-1210.75,пп 873,(1210.75+4145.81+395.58=5752.14) 221214_Счет40-з_услуг_сурнин_1210.75.htm
+payenr 2022.12.20,-4145.81,пп 873,(1210.75+4145.81+395.58=5752.14) 221214_Счет41-з_ээ_сурнин_4145.81.htm
+payagt 2022.12.20,-395.58,пп 873,(1210.75+4145.81+395.58=5752.14) 221214_Счет42-з_агент_сурнин_395.58.htm
+
+datebill=2023.01.06
+dateact31 2022.12
+gascount1=6489
+gascount2=12342
+actnum=08-зт
+billnum=01-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.01.12,-115718.18,пп 20,(115718.18=115718.18) 230106_Счет01-з_тепло_сурнин_115718.18.htm
+
+datebill=2023.01.16
+dateact31 2022.12
+enreq=(445450-444105)*1*1.03736-(4837-4753)*1*1.03736
+enrprice=4.9395
+watercount1=1201
+watercount2=1205
+fill_counters
+actnum=12-зу
+billnum=02-з
+surn_serv_docs
+actnum=12-з
+billnum_enr=03-з
+billnum_ag=04-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.01.18,-1860.98,пп 35,(1860.98=1860.98) 230116_Счет02-з_услуг_сурнин_1860.98.htm
+payenr 2023.01.18,-8357.29,пп 36,(8357.29+775.37=9132.66) 230116_Счет03-з_ээ_сурнин_8357.29.htm
+payagt 2023.01.18,-775.37,пп 36,(8357.29+775.37=9132.66) 230116_Счет04-з_агент_сурнин_775.37.htm
+
+datebill=2023.02.01
+dateact31 2023.01
+gascount1=12342
+gascount2=18570
+actnum=01-зт
+billnum=05-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.02.13,-123130.91,пп 80,230201_Счет05-з_тепло_сурнин_123130.91.htm
+
+datebill=2023.02.15
+dateact31 2023.01
+enreq=(446766-445450-(4928-4837))*1*1.04848
+enrprice=5.22409
+watercount1=1205
+watercount2=1209
+fill_counters
+actnum=01-зу
+billnum=06-з
+surn_serv_docs
+actnum=01-з
+billnum_enr=07-з
+billnum_ag=08-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.02.21,-1830.38,пп 111,230215_Счет06-з_услуг_сурнин_1830.38.htm
+payenr 2023.02.21,-8734.74,пп 112,(8734.74+805.17=9539.91) 230215_Счет07-з_ээ_сурнин_8734.74.htm
+payagt 2023.02.21,-805.17,пп 112,(8734.74+805.17=9539.91) 230215_Счет08-з_агент_сурнин_805.17.htm
+
+datebill=2023.03.01
+dateact31 2023.02
+gascount1=18570
+gascount2=24424
+actnum=02-зт
+billnum=09-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.03.15,-115738.20,пп 157,230301_Счет09-з_тепло_сурнин_115738.20.htm
+
+datebill=2023.03.15
+dateact31 2023.02
+enreq=(448395-446766)*1*1.04468-(5025-4928)*1*1.04468
+enrprice=5.75478
+watercount1=1209
+watercount2=1212
+fill_counters
+actnum=02-зу
+billnum=10-з
+surn_serv_docs
+actnum=02-з
+billnum_enr=11-з
+billnum_ag=12-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.03.16,-2194.72,пп 172,230315_Счет10-з_услуг_сурнин_2194.72.htm
+payenr 2023.03.24,-12325.94,пп 181,(12325.94+1105.23=13431.17) 230315_Счет11-з_ээ_сурнин_12325.94.htm
+payagt 2023.03.24,-1105.23,пп 181,(12325.94+1105.23=13431.17) 230315_Счет12-з_агент_сурнин_1105.23.htm
+
+datebill=2023.04.03
+dateact31 2023.03
+gascount1=24424
+gascount2=27899
+actnum=03-зт
+billnum=13-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.04.07,-68704.15,пп 211,230403_Счет13-з_тепло_сурнин_68704.15.htm
+
+datebill=2023.04.17
+dateact31 2023.03
+enreq=(449221-448395-(5096-5025))*1*1.07151
+enrprice=5.35366
+watercount1=1212
+watercount2=1215
+fill_counters
+actnum=03-зу
+billnum=14-з
+surn_serv_docs
+actnum=03-з
+billnum_enr=15-з
+billnum_ag=16-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.04.18,-1173.74,пп 236,230417_Счет14-з_услуг_сурнин_1173.74.htm
+payenr 2023.04.18,-4234.58,пп 237,(4234.58+519.73=4754.31) 230417_Счет15-з_ээ_сурнин_4234.58.htm
+payagt 2023.04.18,-519.73,пп 237,(4234.58+519.73=4754.31) 230417_Счет16-з_агент_сурнин_519.73.htm
+
+datebill=2023.05.01
+dateact31 2023.04
+gascount1=27899
+gascount2=31503
+actnum=04-зт
+billnum=17-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.05.11,-71254.31,пп 267,230501_Счет17-з_тепло_сурнин_71254.31.htm
+
+datebill=2023.05.13
+dateact31 2023.04
+enreq=(449840-449221)*1*1.06337-(5189-5096)*1*1.06337
+enrprice=5.34520
+watercount1=1215
+watercount2=1219
+fill_counters
+actnum=04-зу
+billnum=18-з
+surn_serv_docs
+actnum=04-з
+billnum_enr=19-з
+billnum_ag=20-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.05.15,-895.06,пп 296,230513_Счет18-з_услуг_сурнин_895.06.htm
+
+# недоплатили 0.07
+# Error! ppsum != total
+# ppsum - total = -0.07
+payenr 2023.05.23,-3567.31,пп 308,(3567.38+358.77-0.07=3926.08) 230513_Счет19-з_ээ_сурнин_3567.38.htm
+payagt 2023.05.23,-358.77,пп 308,(3567.38+358.77-0.07=3926.08) 230513_Счет20-з_агент_сурнин_358.77.htm
+
+datebill=2023.06.02
+dateact31 2023.05
+gascount1=31503
+gascount2=32193
+actnum=05-зт
+billnum=21-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.06.13,-13641.73,пп 334,230602_Счет21-з_тепло_сурнин_13641.73.htm
+
+datebill=2023.06.15
+dateact31 2023.05
+enreq=(450464-449840)*1*1.0711-(5238-5189)*1*1.0711
+enrprice=5.29064
+watercount1=1219
+watercount2=1222
+fill_counters
+actnum=05-зу
+billnum=22-з
+surn_serv_docs
+actnum=05-з
+billnum_enr=23-з
+billnum_ag=24-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.06.19,-924.63,пп 366,230615_Счет22-з_услуг_сурнин_924.63.htm
+payenr 2023.06.19,-3779.21,пп 367,230615_Счет23-з_ээ_сурнин_3779.21.htm
+payagt 2023.06.22,-391.01,пп 373,230615_Счет24-з_агент_сурнин_391.01.htm
+
+datebill=2023.07.14
+dateact31 2023.06
+enreq=(450913-450464)*1*1.06167-(5270-5238)*1*1.06167
+enrprice=5.35000
+watercount1=1222
+watercount2=1226
+fill_counters
+actnum=06-зу
+billnum=25-з
+surn_serv_docs
+actnum=06-з
+billnum_enr=26-з
+billnum_ag=27-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.07.24,-744.63,пп 440,230714_Счет25-з_услуг_сурнин_744.63.htm
+payenr 2023.07.24,-2984.72,пп 441,230714_Счет26-з_ээ_сурнин_2984.72.htm
+payagt 2023.07.24,-284.23,пп 442,230714_Счет27-з_агент_сурнин_284.23.htm
+
+datebill=2023.08.17
+dateact31 2023.07
+enreq=(451252-450913)*1*1.07096-(5296-5270)*1*1.07096
+enrprice=5.22055
+watercount1=1226
+watercount2=1231
+fill_counters
+actnum=07-зу
+billnum=28-з
+surn_serv_docs
+actnum=07-з
+billnum_enr=29-з
+billnum_ag=30-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.08.21,-649.32,пп 512,230817_Счет28-з_услуг_сурнин_649.32.htm
+payenr 2023.08.21,-1789.30,пп 511,230817_Счет29-з_ээ_сурнин_1789.30.htm
+payagt 2023.08.21,-210.00,пп 513,230817_Счет30-з_агент_сурнин_210.00.htm
+
+datebill=2023.09.12
+dateact31 2023.08
+enreq=(451671-451252)*1*1.06146-(5321-5296)*1*1.06146
+enrprice=5.04453
+watercount1=1231
+watercount2=1231
+fill_counters
+actnum=08-зу
+billnum=31-з
+surn_serv_docs
+actnum=08-з
+billnum_enr=32-з
+billnum_ag=33-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.09.13,-539.50,пп 562,230912_Счет31-з_услуг_сурнин_539.50.htm
+payenr 2023.09.13,-2109.21,пп 563,230912_Счет32-з_ээ_сурнин_2109.21.htm
+payagt 2023.09.13,-253.17,пп 564,230912_Счет33-з_агент_сурнин_253.17.htm
+
+datebill=2023.10.13
+dateact31 2023.09
+enreq=(452201-451671)*1*1.06207-(5348-5321)*1*1.06207
+enrprice=5.34276
+watercount1=1231
+watercount2=1248
+fill_counters
+actnum=09-зу
+billnum=34-з
+surn_serv_docs
+actnum=09-з
+billnum_enr=35-з
+billnum_ag=36-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.10.19,-1426.60,пп 643,231013_Счет34-з_услуг_сурнин_1426.60.htm
+payenr 2023.10.23,-4140.80,пп 651,(4140.80+342.51=4483.31) 231013_Счет35-з_ээ_сурнин_4140.80.htm
+payagt 2023.10.23,-342.51,пп 651,(4140.80+342.51=4483.31) 231013_Счет36-з_агент_сурнин_342.51.htm
+
+datebill=2023.11.01
+dateact31 2023.10
+gascount1=32193
+gascount2=34606
+actnum=06-зт
+billnum=37-з
+surn_teplo_docs
+make_reestr 1
+
+paytpl 2023.11.09,-47707.25,пп 685,231101_Счет37-з_тепло_сурнин_47707.25.htm
+
+datebill=2023.11.14
+dateact31 2023.10
+enreq=(452613-452201)*1*1.05442-(5373-5348)*1*1.05442
+enrprice=5.04998
+watercount1=1248
+watercount2=1254
+fill_counters
+actnum=10-зу
+billnum=38-з
+surn_serv_docs
+actnum=10-з
+billnum_enr=39-з
+billnum_ag=40-з
+surn_enr_docs
+make_reestr 1,4
+
+paysrv 2023.11.15,-786.68,пп 698,231114_Счет38-з_услуг_сурнин_786.68.htm
+payenr 2023.11.15,-1770.16,пп 699,(1770.16+247.28=2017.44) 231114_Счет39-з_ээ_сурнин_1770.16.htm
+payagt 2023.11.15,-247.28,пп 699,(1770.16+247.28=2017.44) 231114_Счет40-з_агент_сурнин_247.28.htm
+
+
+
+######################## Current ###############################
+
+write=1
+clearlist alldocs
+#счетчик=rp33-bobikov,gasskv,waterall
+#splitpp.pl
+
+datebill=2023.12.01
+dateact31 2023.11
+gascount1=34606
+gascount2=38248
+actnum=07-зт
+billnum=41-з
+surn_teplo_docs
+make_reestr 1

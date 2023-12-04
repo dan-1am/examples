@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html"; charset="utf-8">
+  <title>${filename}</title>
+  <style type='text/css'>
+${common_css}
+  </style>
+</head>
+<body>
+<div class='page'>
+${doc_before_start}
+  <h1>${doctype} №${docnum} от ${saydate}</h1>
+  <p>к договору ${${dogovor_id}_dogovor}${${dogovor_id}_part}</p>
+  <p>${${side1}_full}, далее ${${dogovor_id}_title1}, с одной стороны
+  и ${${side2}_full}, далее ${${dogovor_id}_title2}, с другой стороны
+  составили настоящий акт о нижеследующем.</p>
+  <br>
+
+${act_before_table}
+  <p>Сальдо на ${saydate1} равно ${total0} рублей.</p>
+  <p>Переданные стороне ${${dogovor_id}_title2} товары (услуги).</p>
+  <table class='table_data'>
+${doctable1}
+  </table>
+
+  <p>Оплата стороной ${${dogovor_id}_title2} товаров (услуг).</p>
+  <table class='table_data'>
+${doctable2}
+  </table>
+
+  <p>Сальдо по расчетам за переданные стороне ${${dogovor_id}_title2} товары (услуги)
+  на ${saydate2} равно ${saldoeq}=${total} рублей.</p>
+
+${act_after_table}
+
+  <table class='sign2'>
+    <tr>
+      <td><b>${${dogovor_id}_title1}:</b></td>
+      <td><b>${${dogovor_id}_title2}:</b></td>
+    </tr>
+    <tr class='sign_row'>
+      <td><p>/${${side1}_persondot}/</p></td>
+      <td><p>/${${side2}_persondot}/</p></td>
+    </tr>
+    <tr class='sign_mp'>
+      <td>${${side1}_stamp}</td>
+      <td>${${side2}_stamp}</td>
+    </tr>
+  </table>
+
+</div>
+
+</body>
+</html>

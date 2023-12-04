@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html"; charset="utf-8">
+  <title>${filename}</title>
+  <style type='text/css'>
+${common_css}
+  </style>
+</head>
+<body>
+<div class='page'>
+${doc_before_start}
+  <p><b>${${side1}_full}</b><br>${${side1}_ids}<br>${${side1}_post}</p>
+  <p align='center'>Образец заполнения платежного поручения</p>
+  <table class='table_data'>
+    <tr>
+      <td style='width: 30%;'>ИНН&nbsp;${${pay1}_inn}</td>
+      <td style='width: 20%;'>КПП&nbsp;${${pay1}_kpp}</td>
+      <td rowspan='2' class='adown acenter' style='width: 25%;'>Сч.№</td>
+      <td rowspan='2' class='adown' style='width: 25%;'>${${pay1}_account}</td>
+    </tr>
+    <tr>
+      <td colspan='2'>Получатель<br>${${pay1}_full}</td>
+    </tr>
+    <tr>
+      <td colspan='2' rowspan='2'>Банк получателя<br>${${pay1}_bank}</td>
+      <td class='acenter'>БИК</td>
+      <td rowspan='2'>${${pay1}_bik}<br><br>${${pay1}_bankacc}</td>
+    </tr>
+    <tr>
+      <td class='acenter'>Сч.№</td>
+    </tr>
+  </table>
+${bill_after_payids}
+  <h1 class='spaced'>${doctype} № ${docnum} от ${saydate}</h1>
+  <p>к договору ${${dogovor_id}_dogovor}</p>
+  <p><b>Плательщик:</b> ${${pay2}_short}, ${${pay2}_ids}</p>
+  <p><b>Грузополучатель:</b> ${${side2}_short}, ${${side2}_ids}</p>
+
+${bill_before_table}
+  <table class='table_data acenter'>
+${warestable}
+  </table>
+
+  <p>Всего наименований ${warescount}, на сумму ${total} рублей</p>
+  <p>${saytotal}.</p>
+${bill_after_table}
+
+  <table class='sign1'>
+    <tr>
+      <td>Руководитель предприятия</td>
+      <td class='sign_area' style='width: 30%;'></td>
+      <td>/${${side1}_persondot}/</td>
+    </tr>
+    <tr>
+      <td>Главный бухгалтер</td>
+      <td class='sign_area' style='width: 30%;'></td>
+      <td>/${${side1}_persondot}/</td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

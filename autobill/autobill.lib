@@ -1,0 +1,316 @@
+#version 1.06
+
+
+writedir=out/
+
+ware_add_date=1
+clearlist stack
+
+sub log_act
+#  logwares make_table_wares
+endsub
+
+sub dateact31
+  lastday ${arg}
+  dateact=${ret}
+endsub
+
+sub make_table
+  clearlist make_table_wares
+  addwares make_table_wares,${wareslist}
+  printwares make_table_wares
+endsub
+
+sub make_act
+  doctype=Акт
+  form=${form_act}
+  set_month ${dateact}
+  docnum=${actnum}
+  make_table
+  log_act
+  makedoc
+  pushdoc ${dogovor_id}_acts
+  pushdoc allacts
+endsub
+
+sub make_sf
+  doctype=С-ф
+  form=${form_sf}
+  set_month ${dateact}
+  docnum=${actnum}
+  make_table
+  makedoc
+endsub
+
+sub prepare_bill
+  doctype=Счет
+  form=${form_bill}
+  set_month ${dateact}
+  set_date ${datebill}
+  docnum=${billnum}
+endsub
+
+sub make_bill
+  prepare_bill
+  make_table
+  makedoc
+endsub
+
+sub make_letter
+  doctype=Письмо
+  form=${form_letter}
+  set_month ${dateact}
+  set_date ${datebill}
+  docnum=${billnum}
+  makedoc
+endsub
+
+sub make_balance_old
+  clearlist balance
+  pushlist balance,${dogovor_id}_balance
+  pushlist balance,${dogovor_id}_acts
+  sumdocs balance
+  pushinfo balance,${datebill},${total},Всего,head
+  doctable balance
+  docnum=${billnum}
+  date=${datebill}
+  doctype=Баланс
+  form=${form_balance}
+  makedoc
+endsub
+
+# Начальное сальдо считается до date1 *включительно*
+# (неточность, но с моими данными работает)
+sub make_balance
+  clearlist balance
+  date1=${${dogovor_id}_balancedate}
+  pushlist balance,${dogovor_id}_acts
+  pushlist balance,${dogovor_id}_balance
+  docsbetween balance,,${date1}
+  sumdocs balance
+  clearlist balance
+  pushinfo balance,${date1},${total},Сальдо,head
+  pushlist balance,${dogovor_id}_balance
+  pushlist balance,${dogovor_id}_acts
+  docsbetween balance,${date1}
+  sumdocs balance
+  pushinfo balance,${datebill},${total},Всего,head
+  doctable balance
+  docnum=${billnum}
+  date=${datebill}
+  doctype=Баланс
+  form=${form_balance}
+  makedoc
+endsub
+
+# Начальное сальдо считается до date1 *включительно*
+# (неточность, но с моими данными работает)
+# => 2023.05.21 исправлено
+sub make_sverka
+  prevday ${date1}
+  sverka_date1p=${ret}
+  clearlist balance
+  pushlist balance,${dogovor_id}_acts
+  pushlist balance,${dogovor_id}_balance
+  docsbetween balance,,${sverka_date1p}
+  sumdocs balance
+  total0=${total}
+  clearlist balance
+  pushlist balance,${dogovor_id}_acts
+  docsbetween balance,${date1},${date2}
+  sumdocs balance
+  pushinfo balance,,${total},Всего,head
+  doctable balance
+  doctable1=${doctable}
+  total1=${total}
+  clearlist balance
+  pushlist balance,${dogovor_id}_balance
+  docsbetween balance,${date1},${date2}
+  sumdocs balance
+  pushinfo balance,,${total},Всего,head
+  doctable balance
+  doctable2=${doctable}
+  total2=${total}
+  saldoeq=${total0}+${total1}+${total2}
+  evaluate round01(${saldoeq})
+  total=${ret}
+  saydate ${date1}
+  saydate1=${ret}
+  saydate ${date2}
+  saydate2=${ret}
+  date=${datebill}
+  set_date ${date}
+  doctype=Акт сверки
+  form=${form_sverka}
+  makedoc
+endsub
+
+sub make_reestr
+  reestr_retdocs=${arg}
+  doctable alldocs
+  date=${datebill}
+  doctype=Реестр
+  form=${form_reestr}
+  set_date ${datebill}
+  docnum=1
+  total=0.00
+#  comment=<p><br></p>
+  comment=<p>Документы в пп. ${reestr_retdocs} в двух экземплярах, по одному для каждой из сторон. Просим вернуть экземпляры стороны ${${dogovor_id}_title1}.</p>
+  makedoc
+endsub
+
+
+
+sub set_dogovor
+  dogovor_id=${arg}
+  nameextra=${${dogovor_id}_nameextra}
+  side1=${${dogovor_id}_side1}
+  side2=${${dogovor_id}_side2}
+  pay1=${${dogovor_id}_pay1}
+  pay2=${${dogovor_id}_pay2}
+endsub
+
+sub dogovor_side
+  splitarg n,side,title,pay
+  ${dogovor_id}_side${n}=${side}
+  ${dogovor_id}_title${n}=${title}
+  ${dogovor_id}_pay${n}=${pay}
+endsub
+
+sub enr_value
+  evaluate round01(eval ${enreq})
+  enr=${ret}
+  evaluate $v{'enreq'}=~/^\((\d+(\.\d+)?)\-(\d+(\.\d+)?)\)\*(.+)$/;@v{qw/enrcount1 enrcount2 enrmult/}=($3,$1,$5);
+  evaluate $v{'enrcountmult'}= $v{'enrmult'}=~/^(\d+(\.\d+)?)\*/ ? $1 : 1
+  evaluate $v{'enreq'}=~/.+\*(.+?)$/; $v{'enrktr'}=$1
+  evaluate round01( $v{'enr'}*(1-1/$v{'enrktr'}) )
+  enrloss=${ret}
+endsub
+
+sub agent_value
+  evaluate round01(${enrsum}*${agentratio})
+  agentprice=${ret}
+endsub
+
+sub fill_counters
+  enr_value
+  trans=${enr}
+  count_sums enr
+  agent_value
+endsub
+#  water=${watercount2}-${watercount1}
+#  drain=${water}
+
+sub make_act_enr
+  doctype=Акт
+  form=${form_actenr}
+  set_month ${dateact}
+  docnum=${actnum}
+  shownds=1
+  make_table
+  log_act
+  makedoc
+  shownds=0
+  pushdoc ${dogovor_id}_acts
+  pushdoc allacts
+endsub
+
+
+
+readfile form_common.css
+common_css=${ret}
+
+form_act=form_act.htm
+form_bill=form_bill.htm
+form_letter=form_letter.htm
+form_balance=form_balance.htm
+form_sverka=form_sverka.htm
+form_sf=form_sf19_agent.htm
+form_agentreport=form_agentreport.htm
+form_reestr=form_reestr.htm
+form_actenr=form_actenrag.htm
+
+
+
+debttext=Задолженность
+debtunit=шт
+enrtext=Электроэнергия
+enrunit=кВтч
+enrpotext=Электроэнергия предоплата
+enrpounit=кВтч
+agenttext=Вознаграждение агента
+agentunit=шт.
+transtext=Транспортировка э/э
+transunit=кВтч
+teplotext=Тепловая энергия
+teplounit=Гкал
+gastext=Газ горючий природный
+gasunit=куб.м.
+watertext=Водоснабжение
+waterunit=куб.м.
+draintext=Водоотведение
+drainunit=куб.м.
+
+
+
+side1=ptpo
+${side1}_short=Каргатское ПТПО
+${side1}_full=Каргатское производственно-торговое потребительское общество
+${side1}_ogrn=1025406025699
+${side1}_inn=5423103528
+${side1}_kpp=542301001
+${side1}_ids=ОГРН&nbsp;${${side1}_ogrn}, ИНН&nbsp;${${side1}_inn}, КПП&nbsp;${${side1}_kpp}
+#${side1}_ids=ОГРНИП&nbsp;${${side1}_ogrn}, ИНН&nbsp;${${side1}_inn}
+${side1}_addr=632410, Новосибирская область, г.&nbsp;Каргат, ул.&nbsp;Советская, 203
+${side1}_post=630501, Новосибирская область, р.п.&nbsp;Краснообск, а/я&nbsp;272
+${side1}_persontitle=Председатель совета
+${side1}_persontitle2=Председателя совета
+${side1}_person=Жеребцова Нина Владимировна
+${side1}_persondot=Жеребцова Н.В.
+${side1}_person2=Жеребцовой Нины Владимировны
+${side1}_personreason=на основании устава
+${side1}_account=40702810644150100066
+${side1}_bank=Сибирский банк ПАО Сбербанк, г.&nbsp;Новосибирск
+${side1}_bik=045004641
+${side1}_bankacc=30101810500000000641
+${side1}_stamp=М.П.
+
+side1=znv
+${side1}_short=ИП Жеребцова Нина Владимировна
+${side1}_full=Индивидуальный предприниматель Жеребцова Нина Владимировна
+${side1}_ogrn=304543333800118
+${side1}_inn=543308105314
+${side1}_kpp=-
+#${side1}_ids=ОГРН&nbsp;${${side1}_ogrn}, ИНН&nbsp;${${side1}_inn}, КПП&nbsp;${${side1}_kpp}
+${side1}_ids=ОГРНИП&nbsp;${${side1}_ogrn}, ИНН&nbsp;${${side1}_inn}
+${side1}_addr=630501, Новосибирская область, р.п.&nbsp;Краснообск, а/я&nbsp;272
+${side1}_post=630501, Новосибирская область, р.п.&nbsp;Краснообск, а/я&nbsp;272
+${side1}_persontitle=
+${side1}_persontitle2=
+${side1}_person=Жеребцова Нина Владимировна
+${side1}_persondot=Жеребцова Н.В.
+${side1}_person2=Жеребцовой Нины Владимировны
+${side1}_personreason=???
+${side1}_bankperson=${${side1}_full}
+${side1}_bankinn=${${side1}_inn}
+${side1}_bankkpp=${${side1}_kpp}
+${side1}_account=40802810244030100415
+${side1}_bank=Сибирский банк ПАО Сбербанк России
+${side1}_bik=045004641
+${side1}_bankacc=30101810500000000641
+${side1}_stamp=М.П.
+
+side1=esb
+${side1}_short=АО &laquo;Новосибирскэнергосбыт&raquo;
+${side1}_full=Акционерное общество &laquo;Новосибирскэнергосбыт&raquo;
+${side1}_ogrn=1065407151127
+${side1}_inn=5407025576
+${side1}_kpp=997650001
+${side1}_ids=ОГРН&nbsp;${${side1}_ogrn}, ИНН&nbsp;${${side1}_inn}, КПП&nbsp;${${side1}_kpp}
+#${side1}_ids=ОГРНИП&nbsp;${${side1}_ogrn}, ИНН&nbsp;${${side1}_inn}
+${side1}_addr=630099, г. Новосибирск, ул. Орджоникидзе, 32
+${side1}_post=630099, г. Новосибирск, ул. Орджоникидзе, 32
+${side1}_account=40702810190550001317
+${side1}_bank=ПАО &laquo;БАНК &laquo;САНКТ-ПЕТЕРБУРГ&raquo;
+${side1}_bik=044030790
+${side1}_bankacc=30101810900000000790

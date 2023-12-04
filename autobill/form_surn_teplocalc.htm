@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html"; charset="utf-8">
+  <title>${filename}</title>
+  <style type='text/css'>
+${common_css}
+  </style>
+</head>
+<body>
+<div class='page'>
+  <p>Расчет потребления тепловой энергии по договору ${${dogovor_id}_dogovor}${${dogovor_id}_part}<br></p>
+  <p>За период ${saymonth}</p>
+  <p>Потребление газа по счетчику: (${gascount2}-${gascount1}) = ${gas} куб.м.</p>
+  <p>Удельная теплота сгорания газа: ${gasburn}</p>
+  <p>Соответствующее количество теплоэнергии: ${gas}*${gasburn} = ${teplo} Гкал</p>
+</div>
+
+</body>
+</html>

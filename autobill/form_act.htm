@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html"; charset="utf-8">
+  <title>${filename}</title>
+  <style type='text/css'>
+${common_css}
+  </style>
+</head>
+<body>
+<div class='page'>
+${doc_before_start}
+  <h1>${doctype} №${docnum} от ${saydate}</h1>
+  <p>к договору ${${dogovor_id}_dogovor}</p>
+  <p><b>${${dogovor_id}_title1}:</b> ${${side1}_short}, ${${side1}_ids}</p>
+  <p><b>${${dogovor_id}_title2}:</b> ${${side2}_short}, ${${side2}_ids}</p>
+  <br>
+
+${act_before_table}
+  <table class='table_data'>
+${warestable}
+  </table>
+
+  <p>Всего передано товаров/оказано услуг на сумму
+  ${total} рублей (${saytotal}).</p>
+
+${act_after_table}
+
+  <table class='sign2'>
+    <tr>
+      <td><b>${${dogovor_id}_title1}:</b></td>
+      <td><b>${${dogovor_id}_title2}:</b></td>
+    </tr>
+    <tr class='sign_row'>
+      <td><p>/${${side1}_persondot}/</p></td>
+      <td><p>/${${side2}_persondot}/</p></td>
+    </tr>
+    <tr class='sign_mp'>
+      <td>${${side1}_stamp}</td>
+      <td>${${side2}_stamp}</td>
+    </tr>
+  </table>
+
+</div>
+
+</body>
+</html>

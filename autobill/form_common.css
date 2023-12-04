@@ -1,0 +1,33 @@
+body {background-color: #606060;}
+.page, table {font: 10pt Arial; color: #000; background-color: #808080;}
+.page {width: 18cm; margin:0 auto;}
+@media print{
+  body, table {background-color: #ffffff;}
+}
+p {margin: 8pt 0;}
+tr:hover {background-color: #E0E0E0;}
+td {empty-cells: show;}
+h1 {font-size: 20pt; text-align: center; margin: 0;}
+h1.spaced {padding-top: 1cm;}
+h1+p {font-size: 14pt; text-align: center; margin: 0 10% 14pt;}
+.text_ident {text-align: justify;text-indent: 1cm;}
+.longident {padding-left: 7cm}
+table.table_data {
+  width: 100%; border-collapse: collapse; border: 1px solid;
+}
+table.table_data td {padding: 1px 4px; border: 1px solid;}
+.table_head {font-weight: bold;}
+.taright {text-align: right;}
+.taleft {text-align: left;}
+.tacenter {text-align: center;}
+.tadown {vertical-align: bottom;}
+.widecell {width: 100%;}
+table.sign1 {page-break-inside: avoid;}
+table.sign1 td {padding: 1cm 1px 1px;}
+table.sign2 {padding-top: 1.5cm; width: 100%; page-break-inside: avoid;}
+table.sign2 td {width: 25%; vertical-align: top; padding: 1px; padding-left: 1cm;}
+table.sign2 td:first-child {padding-left: 1px; padding-right: 1cm;}
+tr.sign_row td {padding-top: 2cm; vertical-align: bottom; text-align: right;}
+tr.sign_row td p {margin: 0; border-bottom: 2px solid #000;}
+tr.sign_mp td {padding-top: 0.5cm; text-align: center;}
+.sign_area {border-bottom: 1px solid #000;}

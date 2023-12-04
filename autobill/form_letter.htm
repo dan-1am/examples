@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html"; charset="utf-8">
+  <title>${filename}</title>
+  <style type='text/css'>
+${common_css}
+  </style>
+</head>
+<body>
+<div class='page'>
+${doc_before_start}
+  <p><b>${${side1}_full}</b><br>${${side1}_ids}<br>${${side1}_post}</p>
+  <hr>
+  <p>${saydate}</p>
+  <p class='longident'>Для: ${${side2}_short}.
+<br>${${side2}_post}
+  <br>
+  </p>
+${text}
+
+  <table class='sign2'>
+    <tr>
+      <td>${${side1}_persontitle}</td>
+      <td></td>
+    </tr>
+    <tr class='sign_row'>
+      <td></td>
+      <td><p>${${side1}_persondot}</p></td>
+    </tr>
+  </table>
+
+</div>
+
+</body>
+</html>
